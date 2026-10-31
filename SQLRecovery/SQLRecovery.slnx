@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SQLRecovery.App/SQLRecovery.App.csproj" />
+    <Project Path="src/SQLRecovery.Core/SQLRecovery.Core.csproj" />
+    <Project Path="src/SQLRecovery.Export/SQLRecovery.Export.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SQLRecovery.Tests/SQLRecovery.Tests.csproj" />
+  </Folder>
+</Solution>

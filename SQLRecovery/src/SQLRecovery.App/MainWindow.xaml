@@ -1,0 +1,618 @@
+﻿<ui:FluentWindow x:Class="SQLRecovery.App.MainWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 Title="SQL Recovery Tool"
+                 Width="1400" Height="880"
+                 MinWidth="1040" MinHeight="620"
+                 WindowStartupLocation="CenterScreen"
+                 WindowState="Maximized"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="None"
+                 WindowCornerPreference="Round"
+                 Background="{StaticResource BrushSurfaceBase}"
+                 AllowDrop="True"
+                 DragOver="Window_OnDragOver"
+                 Drop="Window_OnDrop">
+
+    <ui:FluentWindow.InputBindings>
+        <KeyBinding Key="O" Modifiers="Control" Command="{Binding OpenDatabaseCommand}" />
+        <KeyBinding Key="E" Modifiers="Control" Command="{Binding ExportTableCommand}" />
+        <KeyBinding Key="F5" Command="{Binding RefreshCommand}" />
+    </ui:FluentWindow.InputBindings>
+
+    <Grid Background="{StaticResource BrushSurfaceBase}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- ==================== Title bar ==================== -->
+        <ui:TitleBar Grid.Row="0" Title="SQL Recovery Tool">
+            <ui:TitleBar.Icon>
+                <ui:SymbolIcon Symbol="Database24" />
+            </ui:TitleBar.Icon>
+        </ui:TitleBar>
+
+        <!-- ==================== Error banner ==================== -->
+        <Border Grid.Row="1"
+                Margin="16,6,16,0"
+                Padding="12,10"
+                Background="#241417"
+                BorderBrush="#5B2330"
+                BorderThickness="1"
+                CornerRadius="8"
+                Visibility="{Binding HasError, Converter={StaticResource BoolToVisibilityConverter}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ui:SymbolIcon Symbol="Warning24" FontSize="16"
+                               Foreground="{StaticResource BrushWarning}"
+                               VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding ErrorMessage}"
+                           Foreground="#FCA5A5"
+                           FontSize="12.5"
+                           TextWrapping="Wrap"
+                           Margin="10,0,10,0"
+                           VerticalAlignment="Center" />
+                <Button Grid.Column="2"
+                        Command="{Binding DismissErrorCommand}"
+                        Style="{StaticResource IconButtonStyle}"
+                        Width="26" Height="26"
+                        ToolTip="Dismiss">
+                    <ui:SymbolIcon Symbol="Dismiss24" FontSize="13" />
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- ==================== Main body ==================== -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="312" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Sidebar -->
+            <Border Grid.Column="0"
+                    Background="{StaticResource BrushSurfaceAlt}"
+                    BorderBrush="{StaticResource BrushBorderSoft}"
+                    BorderThickness="0,0,1,0">
+                <Grid Margin="16,10,16,14">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Database card -->
+                    <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}" Padding="14">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="38" Height="38" CornerRadius="10"
+                                        Background="{StaticResource BrushAccentFaint}">
+                                    <ui:SymbolIcon Symbol="Database24" FontSize="19"
+                                                   Foreground="{StaticResource BrushAccentHover}" />
+                                </Border>
+                                <StackPanel Margin="12,0,0,0" VerticalAlignment="Center" MaxWidth="200">
+                                    <TextBlock Text="{Binding DatabaseName}"
+                                               Style="{StaticResource BodyTextStyle}"
+                                               FontWeight="SemiBold"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding DatabaseFile}"
+                                               Style="{StaticResource CaptionTextStyle}"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding DatabaseFile}" />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <Grid Margin="0,14,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="8" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="8" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <Border Background="{StaticResource BrushSurfaceBase}" CornerRadius="8" Padding="10,8">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding DatabaseVersion}" Style="{StaticResource BodyTextStyle}" FontSize="12" />
+                                        <TextBlock Text="Engine" Style="{StaticResource CaptionTextStyle}" FontSize="10" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="2" Background="{StaticResource BrushSurfaceBase}" CornerRadius="8" Padding="10,8">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding DatabaseSize}" Style="{StaticResource BodyTextStyle}" FontSize="12" />
+                                        <TextBlock Text="File size" Style="{StaticResource CaptionTextStyle}" FontSize="10" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Row="2" Background="{StaticResource BrushSurfaceBase}" CornerRadius="8" Padding="10,8">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding DatabaseTables}" Style="{StaticResource BodyTextStyle}" FontSize="12" />
+                                        <TextBlock Text="Tables" Style="{StaticResource CaptionTextStyle}" FontSize="10" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Row="2" Grid.Column="2" Background="{StaticResource BrushSurfaceBase}" CornerRadius="8" Padding="10,8">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding DatabasePages}" Style="{StaticResource BodyTextStyle}" FontSize="12" />
+                                        <TextBlock Text="Allocated" Style="{StaticResource CaptionTextStyle}" FontSize="10" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Actions -->
+                    <Grid Grid.Row="1" Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Button Command="{Binding OpenDatabaseCommand}"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="FolderOpen24" FontSize="16" Margin="0,0,8,0" />
+                                <TextBlock Text="Open database" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Grid.Column="1"
+                                Command="{Binding RefreshCommand}"
+                                Style="{StaticResource IconButtonStyle}"
+                                Margin="8,0,0,0"
+                                ToolTip="Reload catalog (F5)">
+                            <ui:SymbolIcon Symbol="ArrowSync24" FontSize="16" />
+                        </Button>
+                        <Button Grid.Column="2"
+                                Command="{Binding CloseDatabaseCommand}"
+                                Style="{StaticResource IconButtonStyle}"
+                                ToolTip="Close database">
+                            <ui:SymbolIcon Symbol="Dismiss24" FontSize="15" />
+                        </Button>
+                    </Grid>
+
+                    <!-- Section header -->
+                    <Grid Grid.Row="2" Margin="2,18,2,0">
+                        <TextBlock Text="TABLES" Style="{StaticResource SectionHeaderStyle}" VerticalAlignment="Center" />
+                        <TextBlock HorizontalAlignment="Right"
+                                   Style="{StaticResource CaptionTextStyle}"
+                                   Foreground="{StaticResource BrushTextMuted}"
+                                   Text="{Binding Tables.Count, StringFormat={}{0} shown}" />
+                    </Grid>
+
+                    <!-- Search -->
+                    <Border Grid.Row="3" Margin="0,8,0,0"
+                            Height="36" CornerRadius="8"
+                            Background="{StaticResource BrushSurfaceCard}"
+                            BorderBrush="{StaticResource BrushBorderSoft}"
+                            BorderThickness="1">
+                        <Grid Margin="10,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <ui:SymbolIcon Symbol="Search24" FontSize="14"
+                                           Foreground="{StaticResource BrushTextMuted}"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,8,0" />
+                            <Grid Grid.Column="1">
+                                <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                         Style="{StaticResource SearchTextBoxStyle}"
+                                         VerticalAlignment="Center" />
+                                <TextBlock Text="Search tables…"
+                                           VerticalAlignment="Center"
+                                           IsHitTestVisible="False">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource CaptionTextStyle}">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SearchText}" Value="">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <!-- Table list -->
+                    <ListBox Grid.Row="4"
+                             Margin="0,8,0,0"
+                             ItemsSource="{Binding Tables}"
+                             SelectedItem="{Binding SelectedTable, Mode=TwoWay}"
+                             Style="{StaticResource TableListBoxStyle}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <ui:SymbolIcon Symbol="Table24" FontSize="14"
+                                                   Foreground="{StaticResource BrushTextMuted}"
+                                                   VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                        <TextBlock Text="{Binding Name}"
+                                                   Style="{StaticResource BodyTextStyle}"
+                                                   FontSize="12.5"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Style="{StaticResource CaptionTextStyle}" FontSize="10.5">
+                                            <Run Text="{Binding SchemaName, Mode=OneWay}" />
+                                            <Run Text="  ·  " />
+                                            <Run Text="{Binding RowCountText, Mode=OneWay}" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <!-- Sidebar footer -->
+                    <CheckBox Grid.Row="5"
+                              Margin="2,10,0,0"
+                              Content="Show system tables"
+                              FontSize="12"
+                              IsChecked="{Binding ShowSystemTables, Mode=TwoWay}"
+                              Style="{StaticResource AppCheckBoxStyle}" />
+                </Grid>
+            </Border>
+
+            <!-- Content -->
+            <Grid Grid.Column="1" Background="{StaticResource BrushSurfaceBase}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- Table header -->
+                <Grid Grid.Row="0" Margin="24,16,24,12"
+                      Visibility="{Binding IsWelcomeVisible, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{Binding TableTitle}"
+                                   Style="{StaticResource TitleTextStyle}"
+                                   FontSize="20" />
+                        <TextBlock Text="{Binding TableSubtitle}"
+                                   Style="{StaticResource SubtitleTextStyle}"
+                                   Margin="0,4,0,0" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Command="{Binding ExportTableCommand}"
+                                Style="{StaticResource SubtleButtonStyle}"
+                                Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="ArrowExport24" FontSize="15" Margin="0,0,8,0" />
+                                <TextBlock Text="Export table" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding ExportAllCommand}"
+                                Style="{StaticResource PrimaryButtonStyle}">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="ArrowDownload24" FontSize="15" Margin="0,0,8,0" />
+                                <TextBlock Text="Export all" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Grid and overlays -->
+                <Grid Grid.Row="1" Margin="16,0,16,0">
+                    <DataGrid x:Name="RowGrid"
+                              Style="{StaticResource RecoveryDataGridStyle}"
+                              ItemsSource="{Binding Rows}"
+                              CanUserSortColumns="False" />
+
+                    <!-- No tables -->
+                    <Border Background="{StaticResource BrushSurfaceBase}"
+                            Visibility="{Binding ShowNoTablesState, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="420">
+                            <ui:SymbolIcon Symbol="DocumentTable24" FontSize="38"
+                                           Foreground="{StaticResource BrushTextMuted}" />
+                            <TextBlock Text="No tables available"
+                                       Style="{StaticResource TitleTextStyle}"
+                                       FontSize="17"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,14,0,0" />
+                            <TextBlock Style="{StaticResource SubtitleTextStyle}"
+                                       TextAlignment="Center"
+                                       TextWrapping="Wrap"
+                                       Margin="0,6,0,0"
+                                       Text="The system catalog could not be read. Check the error above, or close the database and try another file." />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Empty table -->
+                    <Border Background="{StaticResource BrushSurfaceBase}"
+                            Visibility="{Binding ShowTableEmptyState, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="420">
+                            <ui:SymbolIcon Symbol="Table24" FontSize="36"
+                                           Foreground="{StaticResource BrushTextMuted}" />
+                            <TextBlock Text="No readable rows"
+                                       Style="{StaticResource TitleTextStyle}"
+                                       FontSize="17"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,14,0,0" />
+                            <TextBlock Style="{StaticResource SubtitleTextStyle}"
+                                       TextAlignment="Center"
+                                       TextWrapping="Wrap"
+                                       Margin="0,6,0,0"
+                                       Text="The table exists in the catalog, but its data pages could not be decoded. The data may be compressed or the file may be damaged." />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Welcome overlay -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                  Visibility="{Binding IsWelcomeVisible, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <Border Background="{StaticResource BrushSurfaceBase}" Padding="12">
+                            <Border Style="{StaticResource CardBorderStyle}"
+                                    MaxWidth="820"
+                                    Padding="34"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Margin="0,8,0,20">
+                                <StackPanel>
+                                    <Border Width="62" Height="62" CornerRadius="16"
+                                            HorizontalAlignment="Left"
+                                            Background="{StaticResource BrushAccentFaint}">
+                                        <ui:SymbolIcon Symbol="Database24" FontSize="30"
+                                                       Foreground="{StaticResource BrushAccentHover}" />
+                                    </Border>
+
+                                    <TextBlock Text="Recover data from SQL Server files"
+                                               Style="{StaticResource TitleTextStyle}"
+                                               FontSize="26"
+                                               Margin="0,20,0,0" />
+                                    <TextBlock Style="{StaticResource SubtitleTextStyle}"
+                                               TextWrapping="Wrap"
+                                               FontSize="13.5"
+                                               Margin="0,8,0,0"
+                                               Text="Open an MDF, NDF or LDF file to browse its tables and export rows to CSV, Excel, JSON, SQL or SQLite. All parsing happens locally — nothing is uploaded." />
+
+                                    <StackPanel Orientation="Horizontal" Margin="0,22,0,0">
+                                        <Button Command="{Binding OpenDatabaseCommand}"
+                                                Style="{StaticResource PrimaryButtonStyle}"
+                                                Padding="18,10">
+                                            <StackPanel Orientation="Horizontal">
+                                                <ui:SymbolIcon Symbol="FolderOpen24" FontSize="16" Margin="0,0,8,0" />
+                                                <TextBlock Text="Open database file…" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Button>
+                                        <TextBlock Style="{StaticResource CaptionTextStyle}"
+                                                   VerticalAlignment="Center"
+                                                   Margin="16,0,0,0"
+                                                   Text="MDF · NDF · LDF      Ctrl+O" />
+                                    </StackPanel>
+
+                                    <Border Height="1" Background="{StaticResource BrushBorderSoft}" Margin="0,26,0,20" />
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="3*" />
+                                            <ColumnDefinition Width="26" />
+                                            <ColumnDefinition Width="2*" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel>
+                                            <TextBlock Text="RECENT DATABASES" Style="{StaticResource SectionHeaderStyle}" />
+                                            <TextBlock Margin="0,10,0,0"
+                                                       Text="No recent databases yet.">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock" BasedOn="{StaticResource CaptionTextStyle}">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding RecentFiles.Count}" Value="0">
+                                                                <Setter Property="Visibility" Value="Visible" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <ItemsControl ItemsSource="{Binding RecentFiles}" Margin="0,8,0,0">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Button Command="{Binding DataContext.OpenRecentCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                CommandParameter="{Binding}"
+                                                                Style="{StaticResource RecentFileButtonStyle}"
+                                                                HorizontalContentAlignment="Stretch"
+                                                                Margin="0,0,0,6">
+                                                            <Grid>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="Auto" />
+                                                                    <ColumnDefinition Width="*" />
+                                                                    <ColumnDefinition Width="Auto" />
+                                                                </Grid.ColumnDefinitions>
+                                                                <ui:SymbolIcon Symbol="Document24" FontSize="14"
+                                                                               Foreground="{StaticResource BrushTextSecondary}"
+                                                                               VerticalAlignment="Center" />
+                                                                <StackPanel Grid.Column="1" Margin="10,0,10,0">
+                                                                    <TextBlock Text="{Binding FileName}"
+                                                                               Style="{StaticResource BodyTextStyle}"
+                                                                               FontSize="12.5"
+                                                                               TextTrimming="CharacterEllipsis" />
+                                                                    <TextBlock Text="{Binding Folder}"
+                                                                               Style="{StaticResource CaptionTextStyle}"
+                                                                               FontSize="10.5"
+                                                                               TextTrimming="CharacterEllipsis" />
+                                                                </StackPanel>
+                                                                <ui:SymbolIcon Grid.Column="2" Symbol="ChevronRight24" FontSize="12"
+                                                                               Foreground="{StaticResource BrushTextMuted}"
+                                                                               VerticalAlignment="Center" />
+                                                            </Grid>
+                                                        </Button>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <Button Content="Clear recent list"
+                                                    Command="{Binding ClearRecentCommand}"
+                                                    Style="{StaticResource SubtleButtonStyle}"
+                                                    FontSize="11"
+                                                    Padding="10,6"
+                                                    HorizontalAlignment="Left"
+                                                    Margin="0,6,0,0" />
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="SUPPORTED INPUT" Style="{StaticResource SectionHeaderStyle}" />
+                                            <StackPanel Margin="0,10,0,0">
+                                                <Border Background="{StaticResource BrushSurfaceBase}" CornerRadius="8" Padding="10,7" Margin="0,0,0,6">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <ui:SymbolIcon Symbol="Document24" FontSize="13"
+                                                                       Foreground="{StaticResource BrushAccentHover}"
+                                                                       VerticalAlignment="Center" />
+                                                        <TextBlock Text="MDF — primary data" Style="{StaticResource BodyTextStyle}"
+                                                                   FontSize="12" Margin="8,0,0,0" />
+                                                    </StackPanel>
+                                                </Border>
+                                                <Border Background="{StaticResource BrushSurfaceBase}" CornerRadius="8" Padding="10,7" Margin="0,0,0,6">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <ui:SymbolIcon Symbol="Document24" FontSize="13"
+                                                                       Foreground="{StaticResource BrushAccentHover}"
+                                                                       VerticalAlignment="Center" />
+                                                        <TextBlock Text="NDF — secondary data" Style="{StaticResource BodyTextStyle}"
+                                                                   FontSize="12" Margin="8,0,0,0" />
+                                                    </StackPanel>
+                                                </Border>
+                                                <Border Background="{StaticResource BrushSurfaceBase}" CornerRadius="8" Padding="10,7">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <ui:SymbolIcon Symbol="Document24" FontSize="13"
+                                                                       Foreground="{StaticResource BrushTextMuted}"
+                                                                       VerticalAlignment="Center" />
+                                                        <TextBlock Text="LDF — transaction log" Style="{StaticResource BodyTextStyle}"
+                                                                   FontSize="12" Margin="8,0,0,0" />
+                                                    </StackPanel>
+                                                </Border>
+                                            </StackPanel>
+
+                                            <TextBlock Text="EXPORT TO" Style="{StaticResource SectionHeaderStyle}" Margin="0,18,0,0" />
+                                            <TextBlock Style="{StaticResource CaptionTextStyle}"
+                                                       Margin="0,8,0,0"
+                                                       TextWrapping="Wrap"
+                                                       Text="CSV · Excel · JSON · SQL script · SQLite" />
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </Border>
+                    </ScrollViewer>
+
+                    <!-- Busy overlay -->
+                    <Border Background="#E612121C"
+                            Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <ui:ProgressRing Width="46" Height="46" IsIndeterminate="True"
+                                             Foreground="{StaticResource BrushAccentHover}" />
+                            <TextBlock Text="Reading database catalog…"
+                                       Style="{StaticResource SubtitleTextStyle}"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,16,0,0" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Pagination / row footer -->
+                <Border Grid.Row="2"
+                        BorderBrush="{StaticResource BrushBorderSoft}"
+                        BorderThickness="0,1,0,0"
+                        Padding="24,10"
+                        Visibility="{Binding IsWelcomeVisible, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding RowsLoadedText}" Style="{StaticResource CaptionTextStyle}" />
+                            <ui:ProgressRing Width="15" Height="15" IsIndeterminate="True"
+                                             Margin="10,0,0,0"
+                                             Foreground="{StaticResource BrushAccentHover}"
+                                             Visibility="{Binding IsLoadingRows, Converter={StaticResource BoolToVisibilityConverter}}" />
+                        </StackPanel>
+                        <Button Grid.Column="2"
+                                Command="{Binding LoadMoreCommand}"
+                                Style="{StaticResource SubtleButtonStyle}"
+                                Padding="14,7"
+                                FontSize="12">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="ArrowSync24" FontSize="13" Margin="0,0,7,0" />
+                                <TextBlock Text="Load more rows" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- ==================== Status bar ==================== -->
+        <Border Grid.Row="3"
+                Background="{StaticResource BrushSurfaceAlt}"
+                BorderBrush="{StaticResource BrushBorderSoft}"
+                BorderThickness="0,1,0,0"
+                Padding="16,7">
+            <Grid>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse Width="7" Height="7"
+                             Fill="{StaticResource BrushSuccess}"
+                             VerticalAlignment="Center"
+                             Margin="0,0,8,0" />
+                    <TextBlock Text="{Binding StatusMessage}"
+                               Style="{StaticResource CaptionTextStyle}"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"
+                               MaxWidth="640" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <ProgressBar Width="120" Height="4"
+                                 Margin="0,0,14,0"
+                                 Minimum="0" Maximum="1"
+                                 Value="{Binding Progress, Mode=OneWay}"
+                                 Style="{StaticResource RecoveryProgressBarStyle}">
+                        <ProgressBar.Visibility>
+                            <Binding Path="IsExporting" Converter="{StaticResource BoolToVisibilityConverter}" />
+                        </ProgressBar.Visibility>
+                    </ProgressBar>
+                    <TextBlock Text="{Binding ThemeLabel}"
+                               Style="{StaticResource CaptionTextStyle}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,4,0" />
+                    <Button Command="{Binding ToggleThemeCommand}"
+                            Style="{StaticResource IconButtonStyle}"
+                            Width="28" Height="28"
+                            ToolTip="Toggle dark / light theme">
+                        <Grid>
+                            <ui:SymbolIcon Symbol="WeatherMoon24" FontSize="14"
+                                           Visibility="{Binding IsDarkTheme, Converter={StaticResource BoolToVisibilityConverter}}" />
+                            <ui:SymbolIcon Symbol="WeatherSunny24" FontSize="14"
+                                           Visibility="{Binding IsLightTheme, Converter={StaticResource BoolToVisibilityConverter}}" />
+                        </Grid>
+                    </Button>
+                    <Border Width="1" Height="14" Background="{StaticResource BrushBorder}" Margin="10,0" />
+                    <TextBlock Text="SQL Recovery Tool  ·  1.0"
+                               Style="{StaticResource CaptionTextStyle}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</ui:FluentWindow>
